@@ -47,7 +47,6 @@ public class RemisionService {
         }
     }
 
-    
     @PostConstruct
     public void init() {
         try {
@@ -73,7 +72,7 @@ public class RemisionService {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error al obtener la remision").build();
         }
     }
-    
+
     @GET
     @Path("/get")
     @Produces(MediaType.APPLICATION_JSON)
@@ -88,12 +87,14 @@ public class RemisionService {
     @Path("/add")
     @Produces(MediaType.APPLICATION_JSON)
     public Response createRemision(RemisionDTO remision) {
+
         JSONObject rta = new JSONObject();
         Remision remisionTMP = new Remision();
         remisionTMP.setFecha(remision.getFecha());
         remisionTMP.setHora(remision.getHora());
         remisionTMP.setOrigen(remision.getOrigen());
         remisionTMP.setDestino(remision.getDestino());
+        remisionTMP.setEstado(remision.getEstado());
 
         PersonaService persona = new PersonaService();
         if (persona.returnPersona(Long.parseLong(remision.getConductor()), "conductor")) {
@@ -104,20 +105,32 @@ public class RemisionService {
 
         VehiculosServices vehiculo = new VehiculosServices();
         if (vehiculo.returnVehiculo(remision.getPlacaCamion())) {
-            remisionTMP.setPlacaCamion(remision.getPlacaCamion());
+            if (vehiculo.returnCapacidad(remision.getPlacaCamion()) >= 1) {
+                remisionTMP.setPlacaCamion(remision.getPlacaCamion());
+                vehiculo.modificarCapacidad(remision.getPlacaCamion());
+            } else {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error en capacidad").build();
+            }
         } else {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error al elegir Camion").build();
         }
         ArrayList<String> rutas;
         rutas = remision.getRutaSeguir();
         SolicitudesCargaServices solicitud = new SolicitudesCargaServices();
+
         String temp, fin = "";
         for (String id : rutas) {
-            temp = solicitud.ReturnDestino(Long.parseLong(id));
-            if (!temp.equals("null")) {
-                fin += "->" + temp;
+            if (solicitud.ReturnDisponibilidad(Long.parseLong(id))) {
+                temp = solicitud.ReturnDestino(Long.parseLong(id));
+                if (!temp.equals("null")) {
+                    fin += "->" + temp;
+                }
+                solicitud.cambiarDisponibilidad(Long.parseLong(id));
+            }else{
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error de solicitud no disponible con id: "+id).build();
             }
         }
+
         remisionTMP.setRutaSeguir(fin);
         try {
             entityManager.getTransaction().begin();
@@ -125,6 +138,8 @@ public class RemisionService {
             entityManager.getTransaction().commit();
             entityManager.refresh(remisionTMP);
             rta.put("Persona_id:", remisionTMP.getId());
+            rta.put("se notifica a: ", vehiculo.devolverDueños());
+
         } catch (Throwable t) {
             t.printStackTrace();
             if (entityManager.getTransaction().isActive()) {
@@ -163,7 +178,7 @@ public class RemisionService {
     @Path("/update/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updatePersona(@PathParam("id") long id, RemisionDTO remision) {
+    public Response updateRemision(@PathParam("id") long id, RemisionDTO remision) {
         try {
             Remision remisionTMP = entityManager.find(Remision.class, id);
             if (remisionTMP == null) {
@@ -204,8 +219,33 @@ public class RemisionService {
             entityManager.merge(remisionTMP);
             entityManager.getTransaction().commit();
             entityManager.refresh(remisionTMP);
-            
+
             return Response.status(Response.Status.OK).entity(persona).build();
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error al actualizar la persona").build();
+        }
+    }
+    
+    @PUT
+    @Path("/update/estado/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateEstado(@PathParam("id") long id, RemisionDTO remision) {
+        try {
+            Remision remisionTMP = entityManager.find(Remision.class, id);
+            if (remisionTMP == null) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Persona no encontrada").build();
+            }
+            remisionTMP.setEstado(remision.getEstado());
+
+            entityManager.getTransaction().begin();
+            entityManager.merge(remisionTMP);
+            entityManager.getTransaction().commit();
+            entityManager.refresh(remisionTMP);
+
+            return Response.status(Response.Status.OK).build();
         } catch (Exception e) {
 
             e.printStackTrace();

@@ -8,6 +8,7 @@ import com.example.PersistenceManager;
 import com.example.models.Persona;
 import com.example.models.Vehiculos;
 import com.example.models.VehiculosDTO;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
@@ -43,8 +44,6 @@ public class VehiculosServices {
         }
     }
 
-    
-    
     @PostConstruct
     public void init() {
         try {
@@ -79,6 +78,7 @@ public class VehiculosServices {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error al obtener la persona").build();
         }
     }
+
     public Boolean returnVehiculo(String placa) {
         try {
             Vehiculos vehiculo = entityManager.find(Vehiculos.class, placa);
@@ -91,7 +91,7 @@ public class VehiculosServices {
             return false;
         }
     }
-    
+
     @POST
     @Path("/add")
     @Produces(MediaType.APPLICATION_JSON)
@@ -159,6 +159,49 @@ public class VehiculosServices {
         }
         return Response.status(200).header("Access-Control-Allow-Origin",
                 "*").entity(rta).build();
+    }
+
+    public Long returnCapacidad(String placa) {
+        try {
+            Vehiculos vehiculo = entityManager.find(Vehiculos.class, placa);
+            if (vehiculo == null) {
+                return null;
+            }
+            return vehiculo.getCapacidadCarga();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void modificarCapacidad(String placa) {
+        try {
+            Vehiculos vehiculo = entityManager.find(Vehiculos.class, placa);
+            if (vehiculo == null) {
+                return;
+            }
+            vehiculo.setCapacidadCarga(vehiculo.getCapacidadCarga() - 1);
+            entityManager.getTransaction().begin();
+            entityManager.merge(vehiculo);
+            entityManager.getTransaction().commit();
+            entityManager.refresh(vehiculo);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String devolverDueños() {
+        Query q = entityManager.createQuery("select u from Vehiculos u where u.capacidadCarga > 0");
+        List<Vehiculos> vehicles = q.getResultList();
+        String temp = "";
+        ArrayList<String> arr = new ArrayList();
+        for (Vehiculos vehi : vehicles) {
+            if (!arr.contains(vehi.getPropietarioCamion())) {
+                temp += vehi.getPropietarioCamion() + " ";
+                arr.add(vehi.getPropietarioCamion());
+            }
+        }
+        return temp;
     }
 
     @POST

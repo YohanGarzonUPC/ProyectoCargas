@@ -18,6 +18,7 @@ public class RemisionDTO {
     private String placaCamion;
     private String conductor;
     private ArrayList<String> rutaSeguir;
+    private String estado;
     
     public RemisionDTO(){
         
@@ -77,6 +78,14 @@ public class RemisionDTO {
 
     public void setRutaSeguir(ArrayList<String> rutaSeguir) {
         this.rutaSeguir = rutaSeguir;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
     
 }

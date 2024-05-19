@@ -53,14 +53,22 @@ public class SolicitudesCargaServices {
             e.printStackTrace();
         }
     }
-    
-    
 
     @GET
     @Path("/get")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAll() {
         Query q = entityManager.createQuery("select u from SolicitudesCarga u order by u.propietarioCarga ASC");
+        List<SolicitudesCarga> solicitudesCarga = q.getResultList();
+        return Response.status(200).header("Access-Control-Allow-Origin",
+                "*").entity(solicitudesCarga).build();
+    }
+
+    @GET
+    @Path("/get/disponibles")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getDisponibles() {
+        Query q = entityManager.createQuery("select u from SolicitudesCarga u where u.disponible = true");
         List<SolicitudesCarga> solicitudesCarga = q.getResultList();
         return Response.status(200).header("Access-Control-Allow-Origin",
                 "*").entity(solicitudesCarga).build();
@@ -81,6 +89,7 @@ public class SolicitudesCargaServices {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error al obtener la persona").build();
         }
     }
+
     public String ReturnDestino(Long id) {
         try {
             SolicitudesCarga solicitudesCarga = entityManager.find(SolicitudesCarga.class, id);
@@ -93,15 +102,26 @@ public class SolicitudesCargaServices {
             return "null";
         }
     }
-
+    public boolean ReturnDisponibilidad(Long id) {
+        try {
+            SolicitudesCarga solicitudesCarga = entityManager.find(SolicitudesCarga.class, id);
+            if (solicitudesCarga == null) {
+                return false;
+            }
+            return solicitudesCarga.isDisponible();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     @POST
     @Path("/add")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createVehicles(SolicitudesCargaDTO solicitud) {
+    public Response createCarga(SolicitudesCargaDTO solicitud) {
         JSONObject rta = new JSONObject();
         SolicitudesCarga solicitudesCargaTmp = new SolicitudesCarga();
         solicitudesCargaTmp.setFecha(solicitud.getFecha());
-        
+
         PersonaService persona = new PersonaService();
         if (persona.returnPersona(Long.parseLong(solicitud.getPropietarioCarga()), "propietario carga")) {
             solicitudesCargaTmp.setPropietarioCarga(solicitud.getPropietarioCarga());
@@ -116,12 +136,14 @@ public class SolicitudesCargaServices {
         solicitudesCargaTmp.setPeso(solicitud.getPeso());
         solicitudesCargaTmp.setValorAsegurado(solicitud.getValorAsegurado());
         solicitudesCargaTmp.setEmpaque(solicitud.getEmpaque());
+        solicitudesCargaTmp.setDisponible(true);
         try {
             entityManager.getTransaction().begin();
             entityManager.persist(solicitudesCargaTmp);
             entityManager.getTransaction().commit();
             entityManager.refresh(solicitudesCargaTmp);
             rta.put("solicitudesCarga_id", solicitudesCargaTmp.getId());
+
         } catch (Throwable t) {
             t.printStackTrace();
             if (entityManager.getTransaction().isActive()) {
@@ -139,7 +161,7 @@ public class SolicitudesCargaServices {
     @DELETE
     @Path("/remove/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response removeVehicles(@PathParam("id") long id) {
+    public Response removeCarga(@PathParam("id") long id) {
         JSONObject rta = new JSONObject();
         SolicitudesCarga solicitudesCargatmp = entityManager.find(SolicitudesCarga.class, id);
 
@@ -171,7 +193,7 @@ public class SolicitudesCargaServices {
     @POST
     @Path("/update/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateVehicles(@PathParam("id") long id, SolicitudesCarga solicitud) {
+    public Response updateCarga(@PathParam("id") long id, SolicitudesCarga solicitud) {
         JSONObject rta = new JSONObject();
         SolicitudesCarga q = entityManager.find(SolicitudesCarga.class, id);
 
@@ -210,6 +232,23 @@ public class SolicitudesCargaServices {
         }
         return Response.status(200).header("Access-Control-Allow-Origin",
                 "*").entity(rta).build();
+    }
+
+    public void cambiarDisponibilidad(Long id) {
+        try {
+            SolicitudesCarga carga = entityManager.find(SolicitudesCarga.class, id);
+            if (carga == null) {
+                return;
+            }
+            carga.setDisponible(false);
+            entityManager.getTransaction().begin();
+            entityManager.merge(carga);
+            entityManager.getTransaction().commit();
+            entityManager.refresh(carga);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
     }
 
 }

@@ -25,6 +25,7 @@ public class Remision implements Serializable {
     private String placaCamion;
     private String conductor;
     private String rutaSeguir;
+    private String estado;
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -94,7 +95,16 @@ public class Remision implements Serializable {
         this.rutaSeguir = rutaSeguir;
     }
 
-    public Remision(String fecha, String hora, String origen, String destino, String placaCamion, String conductor, String rutaSeguir) {
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+    
+
+    public Remision(String fecha, String hora, String origen, String destino, String placaCamion, String conductor, String rutaSeguir, String estado) {
         this.fecha = fecha;
         this.hora = hora;
         this.origen = origen;
@@ -102,6 +112,7 @@ public class Remision implements Serializable {
         this.placaCamion = placaCamion;
         this.conductor = conductor;
         this.rutaSeguir = rutaSeguir;
+        this.estado=estado;
     }
     public Remision(){
         

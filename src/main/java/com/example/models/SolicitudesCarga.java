@@ -31,6 +31,7 @@ public class SolicitudesCarga implements Serializable{
     private long peso;
     private long valorAsegurado;
     private String empaque;
+    private boolean disponible;
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -53,6 +54,14 @@ public class SolicitudesCarga implements Serializable{
     @Column(name = "updated_at")
     @Temporal(TemporalType.DATE)
     private Calendar updatedAt;
+
+    public boolean isDisponible() {
+        return disponible;
+    }
+
+    public void setDisponible(boolean disponible) {
+        this.disponible = disponible;
+    }
     
     
     public SolicitudesCarga() {
